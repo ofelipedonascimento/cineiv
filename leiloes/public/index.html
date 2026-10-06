@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radar de Leilões</title>
+<style>
+  :root { --bg:#0f1115; --card:#181b22; --line:#2a2f3a; --txt:#e7e9ee; --mut:#8b93a5; --ok:#22c55e; --warn:#f59e0b; --bad:#ef4444; --acc:#3b82f6; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--txt); }
+  header { display:flex; gap:16px; align-items:center; padding:14px 20px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; }
+  header nav { display:flex; gap:6px; }
+  header nav button { background:none; border:1px solid var(--line); color:var(--mut); padding:6px 12px; border-radius:6px; cursor:pointer; }
+  header nav button.ativo { color:var(--txt); border-color:var(--acc); }
+  .regra { margin-left:auto; color:var(--mut); font-size:12px; }
+  main { padding:16px 20px; max-width:1400px; margin:auto; }
+  .filtros { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  input, select, textarea { background:var(--card); color:var(--txt); border:1px solid var(--line); border-radius:6px; padding:7px 9px; font:inherit; }
+  button.pri { background:var(--acc); color:#fff; border:0; border-radius:6px; padding:8px 14px; cursor:pointer; }
+  label.chk { display:flex; align-items:center; gap:6px; color:var(--mut); }
+  .resumo { color:var(--mut); margin-bottom:10px; }
+  .grade { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:12px; }
+  .lote { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; display:flex; flex-direction:column; gap:8px; }
+  .lote.inelegivel { opacity:.55; }
+  .topo { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; }
+  .score { min-width:46px; text-align:center; font-weight:700; font-size:18px; border-radius:8px; padding:4px 6px; }
+  .tags { display:flex; flex-wrap:wrap; gap:4px; }
+  .tag { font-size:11px; padding:2px 7px; border-radius:99px; border:1px solid var(--line); color:var(--mut); }
+  .tag.ok { color:var(--ok); border-color:var(--ok); } .tag.warn { color:var(--warn); border-color:var(--warn); } .tag.bad { color:var(--bad); border-color:var(--bad); }
+  .nums { display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; font-size:13px; }
+  .nums span { color:var(--mut); }
+  .nums b.pos { color:var(--ok); } .nums b.neg { color:var(--bad); }
+  a { color:var(--acc); }
+  table { width:100%; border-collapse:collapse; } td, th { padding:8px; border-bottom:1px solid var(--line); text-align:left; }
+  .painel { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+  .painel h3 { margin-top:0; }
+  .linha { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
+  #login { max-width:320px; margin:12vh auto; display:flex; flex-direction:column; gap:10px; }
+  .oculto { display:none !important; }
+  code { background:#0b0d11; padding:1px 5px; border-radius:4px; }
+</style>
+</head>
+<body>
+<form id="login" class="oculto">
+  <h2>Radar de Leilões</h2>
+  <input type="password" id="senha" placeholder="Senha de administrador" autofocus>
+  <button class="pri">Entrar</button>
+  <div id="loginErro" style="color:var(--bad)"></div>
+</form>
+
+<div id="app" class="oculto">
+  <header>
+    <h1>Radar de Leilões</h1>
+    <nav>
+      <button data-aba="oportunidades" class="ativo">Oportunidades</button>
+      <button data-aba="investidores">Investidores</button>
+      <button data-aba="importar">Importar / Coletar</button>
+    </nav>
+    <div class="regra" id="regra"></div>
+  </header>
+  <main>
+    <section id="aba-oportunidades">
+      <div class="filtros">
+        <input id="f-busca" placeholder="Buscar (ex: iphone, Corolla, Ribeirão)">
+        <select id="f-categoria"><option value="">Todas as categorias</option></select>
+        <select id="f-origem"><option value="">Todas as origens</option></select>
+        <input id="f-uf" placeholder="UF" maxlength="2" size="3">
+        <input id="f-maxLance" type="number" placeholder="Lance máx. R$">
+        <select id="f-ordem">
+          <option value="score">Melhor nota</option>
+          <option value="roi">Maior retorno ao mês</option>
+          <option value="desconto">Maior desconto</option>
+          <option value="lance">Menor lance</option>
+          <option value="data">Leilão mais próximo</option>
+        </select>
+        <label class="chk"><input type="checkbox" id="f-parcelado"> Só parcelados</label>
+        <label class="chk"><input type="checkbox" id="f-todos"> Mostrar fora da regra</label>
+        <button class="pri" id="btnBoletim" type="button">Baixar boletim (CSV)</button>
+      </div>
+      <div class="resumo" id="resumo"></div>
+      <div class="grade" id="grade"></div>
+    </section>
+
+    <section id="aba-investidores" class="oculto">
+      <div class="painel">
+        <h3>Novo investidor</h3>
+        <div class="linha">
+          <input id="i-nome" placeholder="Nome">
+          <input id="i-contato" placeholder="WhatsApp / e-mail">
+          <select id="i-categoria"><option value="">Qualquer categoria</option></select>
+          <input id="i-uf" placeholder="UF" maxlength="2" size="3">
+          <input id="i-maxLance" type="number" placeholder="Ticket máx. R$">
+          <label class="chk"><input type="checkbox" id="i-parcelado"> Só parcelados</label>
+          <button class="pri" id="btnInvestidor" type="button">Salvar</button>
+        </div>
+      </div>
+      <table><thead><tr><th>Nome</th><th>Contato</th><th>Perfil</th><th>Oportunidades agora</th><th></th></tr></thead><tbody id="tInvestidores"></tbody></table>
+    </section>
+
+    <section id="aba-importar" class="oculto">
+      <div class="painel">
+        <h3>Coleta automática (Caixa: imóveis retomados de financiamento)</h3>
+        <div class="linha"><input id="c-ufs" value="SP" placeholder="UFs separadas por vírgula"><button class="pri" id="btnColetar" type="button">Coletar agora</button></div>
+        <div id="c-res" class="resumo"></div>
+      </div>
+      <div class="painel">
+        <h3>Importar planilha CSV</h3>
+        <p class="resumo">Para editais da Receita Federal (SLE) e leiloeiros de veículos/eletrônicos de retomada.
+          Colunas: <code>id;titulo;categoria;origem;uf;cidade;leiloeiro;valor_avaliacao;lance_inicial;data_leilao;parcelamento;entrada_pct;parcelas;riscos;url;descricao</code>.
+          Origem: <code>receita</code> ou <code>financiamento</code>. Riscos separados por <code>|</code> (ocupado, debitos, sem_visitacao, sinistro).
+          Ou envie a lista CSV baixada do site da Caixa.</p>
+        <div class="linha">
+          <select id="m-tipo"><option value="planilha">Planilha padrão</option><option value="caixa">Lista da Caixa</option></select>
+          <input id="m-fonte" placeholder="Nome da fonte (ex: rfb-santos-0825)">
+          <input type="file" id="m-arquivo" accept=".csv,text/csv">
+          <button class="pri" id="btnImportar" type="button">Importar</button>
+        </div>
+        <div id="m-res" class="resumo"></div>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
